@@ -1,0 +1,137 @@
+
+/* 
+========================================================================================================
+PROJECT: SQL Queries to answer Adoc Questions about the dataset.
+
+Data Validation: The datset was chet for duplicate, 65row shows up as duplicates and they were removed.
+Original data set consist of 1020 row but 65 rows were duplicate.
+The queries have been answered with the description above each query.
+
+WARNING: Be careful when handling, to avoid breaking the code
+=========================================================================================================
+*/
+
+USE [my_base]
+GO
+
+SELECT [Customer_ID]
+      ,[Customer_Name]
+      ,[Email]
+      ,[Country]
+      ,[Product_ID]
+      ,[Product_Name]
+      ,[Order_Date]
+      ,[Order_Amount]
+      ,[Quantity]
+      ,[Discount]
+      ,[Region]
+      ,[Age]
+      ,[Gender]
+      ,[Income_Level]
+      ,[Customer_Type]
+      ,[Product_Category]
+      ,[Order_Status]
+      ,[Return_Status]
+      ,[Customer_Satisfaction]
+      ,[Shipping_Method]
+      ,[Payment_Method]
+      ,[Age_Group]
+      ,[Marital_Status]
+      ,[Customer_Since]
+      ,[Product_Description]
+      ,[Brand]
+      ,[Supplier]
+      ,[Time_to_Delivery]
+      ,[Order_Type]
+      ,[Customer_Feedback]
+      ,[Feedback_Score]
+      ,[Engagement_with_Ads]
+      ,[Coupon_Used]
+      ,[Time_of_Purchase]
+      ,[Sales_Channel]
+  FROM [dbo].[Sheet1$]
+
+GO
+--preview  dataset with duplicate before begin deleted .
+
+WITH CTE AS ( 
+SELECT *,
+        ROW_NUMBER() OVER(
+		PARTITION BY Customer_ID
+		ORDER BY Order_Date
+		) AS rn
+FROM [dbo].[Sheet1$]
+)
+SELECT *
+FROM CTE
+WHERE rn >1;
+
+--Checking dataset for duplicate
+SELECT Customer_ID, COUNT(*) AS CNT
+FROM [dbo].[Sheet1$]
+GROUP BY Customer_ID
+HAVING COUNT(*)>1
+
+--Removing duplicates from dataset .
+
+WITH CTE AS ( 
+SELECT *,
+        ROW_NUMBER() OVER(
+		PARTITION BY Customer_ID
+		ORDER BY Order_Date
+		) AS rn
+FROM [dbo].[Sheet1$]
+)
+DELETE FROM CTE
+WHERE rn > 1;
+
+
+SELECT * FROM [dbo].[Sheet1$];
+
+--1.	Which customers made purchases in 2023?
+SELECT Customer_Name,Order_Date
+FROM[dbo].[Sheet1$]
+WHERE YEAR(Order_Date) = '2023';
+
+--2.	Who are our top 10 spending customers?
+SELECT TOP 10 max(Order_Amount)
+					,Customer_Name 
+FROM[dbo].[Sheet1$]
+GROUP BY Order_Amount, Customer_Name
+ORDER BY Order_Amount DESC
+
+--3.	Which customers returned at least one product?
+SELECT DISTINCT Customer_Name 
+      ,Return_Status
+FROM[dbo].[Sheet1$]
+WHERE Return_Status ='Returned'
+
+--4.	What orders were placed between January and March 2024?
+SELECT Product_Name
+FROM[dbo].[Sheet1$]
+WHERE Order_Date BETWEEN '2024-01-01' AND  '2024-03-31';
+
+--5.	Who received discounts greater than 20%?
+
+SELECT Customer_Name 
+      ,Discount
+FROM[dbo].[Sheet1$]
+WHERE Discount >0.20
+
+--6.	Which products are priced above the average and still sell?
+-- Step 1: Get the overall average order amount
+WITH avg_CTE AS (
+SELECT AVG(Order_Amount) AS Av_Amount
+FROM[dbo].[Sheet1$]
+)
+-- Step 2: Compare each product's price to that average
+SELECT DISTINCT S.Product_Name
+FROM[dbo].[Sheet1$] S 
+cross join avg_CTE a
+WHERE S.Order_Amount > a.Av_Amount
+
+
+--7.	Which orders were shipped in 2 days or less?
+SELECT *
+FROM [dbo].[Sheet1$]
+WHERE Order_status = 'Completed' AND Time_to_Delivery <= 2;
